@@ -1,3 +1,7 @@
+c("Ls")
+c("MiscMath")
+c("Parallel")
+
 defmodule NDLM do
   def build_transform(data) do
     Parallel.pmap(data, fn(x) -> 
