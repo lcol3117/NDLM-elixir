@@ -123,19 +123,6 @@ defmodule Ls do
   def iof(l,e) do
     Enum.find_index(l, fn(x) -> x === e end)
   end
-
-  def booleanOr(l) do
-    booleanOr(l,false)
-  end
-  def booleanOr([lh|lt],false) do
-    booleanOr(lt,lh)
-  end
-  def booleanOr(_l,true) do
-    true
-  end
-  def booleanOr([],false) do
-    false
-  end
 end
 
 defmodule NDLM do
@@ -206,7 +193,14 @@ defmodule NDLM do
     all = Parallel.pmap(opt, fn(o) -> 
       linked(Ls.el(o,0),Ls.el(o,1),data,ndt,eta) end)
     IO.inspect(all)
-    Ls.booleanOr(all)
+    binres = Parallel.pmap(all, fn(x) -> 
+      x && 0 || 1 end)
+    |> MiscMath.median
+    if binres === 1 do
+      true
+    else
+      false
+    end
   end
 
   defp closest(p,data) do
