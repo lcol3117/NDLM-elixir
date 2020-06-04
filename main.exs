@@ -123,19 +123,6 @@ defmodule Ls do
   def iof(l,e) do
     Enum.find_index(l, fn(x) -> x === e end)
   end
-
-  def booleanOr(l) do
-    booleanOr(l,false)
-  end
-  def booleanOr([lh|lt],false) do
-    booleanOr(lt,lh)
-  end
-  def booleanOr(_l,true) do
-    true
-  end
-  def boolean([],false) do
-    false
-  end
 end
 
 defmodule NDLM do
@@ -152,7 +139,7 @@ defmodule NDLM do
 
   defp l2dNotSelf(a,b) do
     raw = MiscMath.l2dist(a,b)
-    unless raw === 0 do
+    unless raw === 0.0 do
       raw
     else
       :infinity
@@ -174,7 +161,7 @@ defmodule NDLM do
     beta = MiscMath.abs(ypred - Ls.el(x,1))
     minx = Ls.mn([Ls.el(a,0),Ls.el(b,0)])
     maxx = Ls.mx([Ls.el(a,0),Ls.el(b,0)])
-    if Ls.el(x,0) > minx do
+    within = if Ls.el(x,0) > minx do
       if Ls.el(x,0) < maxx do
         beta <= eta
       else
@@ -183,6 +170,7 @@ defmodule NDLM do
     else
       false
     end
+    within
   end
 
   defp ok(a,b,ndt,data,x) do
@@ -190,7 +178,8 @@ defmodule NDLM do
     ndtb = Ls.el(ndt,Ls.iof(data,b))
     ndtx = Ls.el(ndt,Ls.iof(data,x))
     minouter = Ls.mn([ndta,ndtb])
-    ndtx < minouter
+    isok = ndtx < minouter
+    isok
   end
 
   def sameCluster(a,b,data,eta) do
@@ -200,9 +189,18 @@ defmodule NDLM do
     [a1,b1] = Parallel.pmap([a,b], fn(x) -> 
       closest(x,data) end)
     opt = [[a,b],[a1,b],[a,b1],[a1,b1]]
-    Parallel.pmap(opt, fn(o) -> 
+    IO.inspect(opt)
+    all = Parallel.pmap(opt, fn(o) -> 
       linked(Ls.el(o,0),Ls.el(o,1),data,ndt,eta) end)
-    |> Ls.booleanOr
+    IO.inspect(all)
+    binres = Parallel.pmap(all, fn(x) -> 
+      x && 0 || 1 end)
+    |> MiscMath.median
+    if binres === 1 do
+      true
+    else
+      false
+    end
   end
 
   defp closest(p,data) do
@@ -211,3 +209,8 @@ defmodule NDLM do
     Ls.el(data,Ls.iof(dists,Ls.mn(dists)))
   end
 end
+
+mydata = [[1,2],[1.5,2.5],[3.1,1.1],[3.2,1.3],[8.9,9.9],[10.8,8.8]]
+
+IO.inspect(NDLM.sameCluster([1,2],[3.2,1.3],mydata,3))
+IO.inspect(NDLM.sameCluster([1,2],[8.9,9.9],mydata,3))
